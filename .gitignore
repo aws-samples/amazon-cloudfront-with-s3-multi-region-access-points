@@ -1,0 +1,5 @@
+.idea
+.DS_Store
+*/.DS_Store
+lambda/deployment-package.zip
+lambda/package

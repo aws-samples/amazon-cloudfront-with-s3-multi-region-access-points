@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  S3BucketOneName:
+    Description: |
+      The name of an existing Amazon S3 bucket that's in same Region as this deployment.
+    Type: String
+  S3BucketTwoName:
+    Description: |
+      The name of an existing Amazon S3 bucket that's in same Region as this deployment.
+    Type: String
+
+Resources:
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub ${AWS::StackName}
+        Enabled: true
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - 'GET'
+            - 'HEAD'
+          # For testing purposes, Min, Max and Default TTL is set to 0.
+          MinTTL: 0
+          MaxTTL: 0
+          DefaultTTL: 0
+          ForwardedValues:
+            QueryString: true
+          LambdaFunctionAssociations:
+            - EventType: origin-request
+              LambdaFunctionARN: !Ref LambdaVersion
+          TargetOriginId: 's3-mrap-origin'
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: index.html
+        Origins:
+          - DomainName: !Sub '${MultiRegionAccessPoint.Alias}.accesspoint.s3-global.amazonaws.com'
+            Id: 's3-mrap-origin'
+            CustomOriginConfig:
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+
+  Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.8
+      Handler: lambda_function.lambda_handler
+      Code:
+        S3Bucket: !Ref S3BucketOneName
+        S3Key: lambdapackage/deployment-package.zip
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - edgelambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: PublishVersion
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3BucketOneName}/*'
+                  - !Sub 'arn:aws:s3:::${S3BucketTwoName}/*'
+                  - !Sub 'arn:aws:s3::${AWS::AccountId}:accesspoint/${MultiRegionAccessPoint.Alias}/*'
+
+  LambdaVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref Lambda
+
+  MultiRegionAccessPoint:
+    Type: AWS::S3::MultiRegionAccessPoint
+    Properties:
+      Name: cloudfront-s3-mrap-demo
+      Regions:
+        - Bucket: !Ref S3BucketOneName
+        - Bucket: !Ref S3BucketTwoName
+
+Outputs:
+  CloudFrontDns:
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
+  CloudFrontOrigin:
+    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudfront/home?region=${AWS::Region}#/distributions/${CloudFrontDistribution}/origins
+  CloudFrontBehavior:
+    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudfront/home?region=${AWS::Region}#/distributions/${CloudFrontDistribution}/behaviors/0/edit
+  S3MultiRegionAccessPoints:
+    Value: !Sub https://s3.console.aws.amazon.com/s3/mraps/${AWS::AccountId}/cloudfront-s3-mrap-demo?region=${AWS::Region}
+  S3BucketOneName:
+    Value: !Sub ${S3BucketOneName}
+  S3BucketTwoName:
+    Value: !Sub ${S3BucketTwoName}
