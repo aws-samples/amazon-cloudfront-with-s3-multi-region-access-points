@@ -97,14 +97,15 @@ Deploy the CloudFormation stack by run the following command below.
 
 ```shell
 CF_STACK_NAME="cloudfront-s3-mrap-demo"
-CF_TEMPLATE_FILE_PATH="./cloudformation.template"
+CF_TEMPLATE_FILE_PATH="cloudformation.template"
 S3_BUCKET_ONE_NAME="<BUCKET-ONE-NAME-HERE>"
 S3_BUCKET_TWO_NAME="<BUCKET-TWO-NAME-HERE>"
 
 STACK_ID=$(aws cloudformation create-stack \
     --stack-name ${CF_STACK_NAME} \
-    --template-body ${CF_TEMPLATE_FILE_PATH} \
+    --template-body file://${CF_TEMPLATE_FILE_PATH} \
     --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} \
+    --capabilities CAPABILITY_IAM \
     --query 'StackId' --output text)
 ```
 
@@ -196,6 +197,10 @@ custom header in your failover origin.
 ## Cleanup
 
 After you’ve tested the solution, you can clean up all the created AWS resources by deleting the CloudFormation stack.
+
+`Note`: CloudFormation might not be able to delete the Lambda function version
+because it is a replicated function that's association with the CloudFront distribution. In this case, please try to
+delete the Lambda function again in few hours later. For more info see [Deleting Lambda@Edge functions and replicas](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-edge-delete-replicas.html).
 
 ```shell
 CF_STACK_NAME="cloudfront-s3-mrap-demo"
