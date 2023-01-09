@@ -9,7 +9,10 @@ Parameters:
     Description: |
       The name of an existing Amazon S3 bucket that's in same Region as this deployment.
     Type: String
-
+  S3BucketDeployables:
+    Description: |
+      The name of an existing Amazon S3 bucket where the deployment package will exist.
+    Type: String
 Resources:
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -44,10 +47,10 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Role: !GetAtt LambdaRole.Arn
-      Runtime: python3.8
+      Runtime: python3.9
       Handler: lambda_function.lambda_handler
       Code:
-        S3Bucket: !Ref S3BucketOneName
+        S3Bucket: !Ref S3BucketDeployables
         S3Key: lambdapackage/deployment-package.zip
 
   LambdaRole:

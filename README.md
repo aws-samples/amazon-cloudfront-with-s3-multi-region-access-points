@@ -21,13 +21,15 @@ setup that provides latency-based routing so that content is delivered with the 
   permissions to create [Amazon CloudFront distribution](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-working-with.html),
   Lambda function and S3 Multi-Region Access Point.
 
+- One Amazon S3 bucket in us-east-1 which you will upload Lambda assets to. 
+
 - Two Amazon S3 buckets in same AWS Account, that will be added to the S3 Multi-Region Access Point.
   The Amazon S3 buckets must be in one of
   [AWS Regions supported by S3 Multi-Region Access Point](https://docs.aws.amazon.com/AmazonS3/latest/userguide/MultiRegionAccessPointRestrictions.html).
 
 - The [AWS Command Line Interface (CLI)](https://aws.amazon.com/cli/) installed and
   [configured for use](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html),
-  to deploy the CloudFormation template.
+  to deploy the CloudFormation template. 
 
 - [Python 3.8](https://www.python.org/downloads/) or later and
   [pip package installer](https://pip.pypa.io/en/stable/), to package Python code for Lambda.
@@ -71,15 +73,19 @@ zip -g deployment-package.zip lambda_function.py
 ```
 
 You now should have `deployment-package.zip` file inside the `lambda` folder.
-Run the next command to upload the deployment package to your Amazon S3 bucket `S3_BUCKET_ONE_NAME`.
 
-Provide the Amazon S3 bucket names for variables `S3_BUCKET_ONE_NAME` by replacing
-the placeholder `<BUCKET-ONE-NAME-HERE>` with your S3 bucket name.
+Run the next command to upload the deployment package to your Amazon S3 bucket `S3_BUCKET_DEPLOYABLES`.
 
 ```shell
-S3_BUCKET_ONE_NAME="<BUCKET-ONE-NAME-HERE>"
-aws s3 cp ./deployment-package.zip s3://${S3_BUCKET_ONE_NAME}/lambdapackage/deployment-package.zip
+STACK_ID=$(aws cloudformation create-stack \
+    --stack-name ${CF_STACK_NAME} \
+    --template-body file://${CF_TEMPLATE_FILE_PATH} \
+    --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} ParameterKey=S3BucketDeployables,ParameterValue=$S3_BUCKET_DEPLOYABLES\
+    --capabilities CAPABILITY_IAM \
+    --query 'StackId' --output text)="<DEPLOYABLES-BUCKET-HERE>"
+aws s3 cp ./deployment-package.zip s3://${S3_BUCKET_DEPLOYABLES}/lambdapackage/deployment-package.zip
 ```
+
 
 ### Deploying CloudFormation stack
 
@@ -104,7 +110,7 @@ S3_BUCKET_TWO_NAME="<BUCKET-TWO-NAME-HERE>"
 STACK_ID=$(aws cloudformation create-stack \
     --stack-name ${CF_STACK_NAME} \
     --template-body file://${CF_TEMPLATE_FILE_PATH} \
-    --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} \
+    --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} ParameterKey=S3BucketDeployables,ParameterValue=$S3_BUCKET_DEPLOYABLES \
     --capabilities CAPABILITY_IAM \
     --query 'StackId' --output text)
 ```
