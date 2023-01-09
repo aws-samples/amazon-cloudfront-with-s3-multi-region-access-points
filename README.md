@@ -13,6 +13,14 @@ setup that provides latency-based routing so that content is delivered with the 
 
 ![Architecture](./images/CF-S3-MRAP-active-active-latency-based-architecture.png)
 
+
+1. Client makes a request that is expected to match the path pattern to the S3 Multi-Region Access Point origin.
+2. CloudFront matches the path pattern to the S3 Multi-Region Access Point at origin and invokes the associated origin request Lambda@Edge function.
+3. The Lambda function modifies the request object, which is passed in the event object, and signs the request using Signature Version 4A (SigV4A).
+4. The modified request is returned back to CloudFront.
+5. CloudFront, using the SigV4A authorization headers from the modified request object, makes the request to the S3 Multi-Region Access Point origin.
+6. S3 Multi-Region Access Point routes the request to the S3 bucket based on lowest network latency.
+
 ## Deployment and implementation details
 
 ### Prerequisites
@@ -77,12 +85,7 @@ You now should have `deployment-package.zip` file inside the `lambda` folder.
 Run the next command to upload the deployment package to your Amazon S3 bucket `S3_BUCKET_DEPLOYABLES`.
 
 ```shell
-STACK_ID=$(aws cloudformation create-stack \
-    --stack-name ${CF_STACK_NAME} \
-    --template-body file://${CF_TEMPLATE_FILE_PATH} \
-    --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} ParameterKey=S3BucketDeployables,ParameterValue=$S3_BUCKET_DEPLOYABLES\
-    --capabilities CAPABILITY_IAM \
-    --query 'StackId' --output text)="<DEPLOYABLES-BUCKET-HERE>"
+S3_BUCKET_DEPLOYABLES="<DEPLOYABLES-BUCKET-NAME-HERE>"
 aws s3 cp ./deployment-package.zip s3://${S3_BUCKET_DEPLOYABLES}/lambdapackage/deployment-package.zip
 ```
 
