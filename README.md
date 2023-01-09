@@ -82,7 +82,7 @@ zip -g deployment-package.zip lambda_function.py
 
 You now should have `deployment-package.zip` file inside the `lambda` folder.
 
-Run the next command to upload the deployment package to your Amazon S3 bucket `S3_BUCKET_DEPLOYABLES`.
+Run the next command to upload the deployment package to your Amazon S3 bucket from the second prerequisite. Create a variable called `S3_BUCKET_DEPLOYABLES` and replace `<DEPLOYABLES-BUCKET-NAME-HERE>` with the name of that bucket. 
 
 ```shell
 S3_BUCKET_DEPLOYABLES="<DEPLOYABLES-BUCKET-NAME-HERE>"
