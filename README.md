@@ -122,7 +122,7 @@ STACK_ID=$(aws cloudformation create-stack \
 
 ```shell
 aws cloudformation wait stack-create-complete \
-  --stack-name ${STACK_ID}
+  --stack-name ${STACK_ID} --region us-east-1
 ```
 
 ## Testing the deployment
@@ -145,7 +145,7 @@ Upload an `index.html` file into the first S3 bucket.
 CF_STACK_NAME="cloudfront-s3-mrap-demo"
 S3_BUCKET_ONE_NAME=($(aws cloudformation describe-stacks \
       --stack-name ${CF_STACK_NAME} \
-      --query "Stacks[0].Outputs[?OutputKey=='S3BucketOneName'].OutputValue" --output text \
+      --query "Stacks[0].Outputs[?OutputKey=='S3BucketOneName'].OutputValue" --output text --region us-east-1 \
       --output text))
 
 BLOB="hello from s3 bucket ${S3_BUCKET_ONE_NAME}"
@@ -158,7 +158,7 @@ Upload an `index.html` file into the second S3 bucket.
 CF_STACK_NAME="cloudfront-s3-mrap-demo"
 S3_BUCKET_TWO_NAME=($(aws cloudformation describe-stacks \
       --stack-name ${CF_STACK_NAME} \
-      --query "Stacks[0].Outputs[?OutputKey=='S3BucketTwoName'].OutputValue" --output text \
+      --query "Stacks[0].Outputs[?OutputKey=='S3BucketTwoName'].OutputValue" --output text --region us-east-1 \
       --output text))
 
 BLOB="hello from s3 bucket ${S3_BUCKET_TWO_NAME}"
