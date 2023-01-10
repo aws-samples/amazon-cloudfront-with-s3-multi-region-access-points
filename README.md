@@ -115,7 +115,7 @@ STACK_ID=$(aws cloudformation create-stack \
     --template-body file://${CF_TEMPLATE_FILE_PATH} \
     --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} ParameterKey=S3BucketDeployables,ParameterValue=$S3_BUCKET_DEPLOYABLES \
     --capabilities CAPABILITY_IAM \
-    --query 'StackId' --output text)
+    --query 'StackId' --output text --region us-east-1)
 ```
 
 `Optional`: You can wait for stack creation. When the command completes, it's a signal stack creation is completed.
