@@ -113,7 +113,7 @@ S3_BUCKET_TWO_NAME="<BUCKET-TWO-NAME-HERE>"
 STACK_ID=$(aws cloudformation create-stack \
     --stack-name ${CF_STACK_NAME} \
     --template-body file://${CF_TEMPLATE_FILE_PATH} \
-    --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} ParameterKey=S3BucketDeployables,ParameterValue=$S3_BUCKET_DEPLOYABLES \
+    --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} ParameterKey=S3BucketDeployables,ParameterValue=${S3_BUCKET_DEPLOYABLES} \
     --capabilities CAPABILITY_IAM \
     --query 'StackId' --output text --region us-east-1)
 ```
