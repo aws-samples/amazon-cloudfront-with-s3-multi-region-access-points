@@ -13,6 +13,14 @@ setup that provides latency-based routing so that content is delivered with the 
 
 ![Architecture](./images/CF-S3-MRAP-active-active-latency-based-architecture.png)
 
+
+1. Client makes a request that is expected to match the path pattern to the S3 Multi-Region Access Point origin.
+2. CloudFront matches the path pattern to the S3 Multi-Region Access Point at origin and invokes the associated origin request Lambda@Edge function.
+3. The Lambda function modifies the request object, which is passed in the event object, and signs the request using Signature Version 4A (SigV4A).
+4. The modified request is returned back to CloudFront.
+5. CloudFront, using the SigV4A authorization headers from the modified request object, makes the request to the S3 Multi-Region Access Point origin.
+6. S3 Multi-Region Access Point routes the request to the S3 bucket based on lowest network latency.
+
 ## Deployment and implementation details
 
 ### Prerequisites
@@ -21,13 +29,15 @@ setup that provides latency-based routing so that content is delivered with the 
   permissions to create [Amazon CloudFront distribution](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-working-with.html),
   Lambda function and S3 Multi-Region Access Point.
 
+- One Amazon S3 bucket in us-east-1 which you will upload Lambda assets to. 
+
 - Two Amazon S3 buckets in same AWS Account, that will be added to the S3 Multi-Region Access Point.
   The Amazon S3 buckets must be in one of
   [AWS Regions supported by S3 Multi-Region Access Point](https://docs.aws.amazon.com/AmazonS3/latest/userguide/MultiRegionAccessPointRestrictions.html).
 
 - The [AWS Command Line Interface (CLI)](https://aws.amazon.com/cli/) installed and
   [configured for use](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html),
-  to deploy the CloudFormation template.
+  to deploy the CloudFormation template. 
 
 - [Python 3.8](https://www.python.org/downloads/) or later and
   [pip package installer](https://pip.pypa.io/en/stable/), to package Python code for Lambda.
@@ -71,15 +81,14 @@ zip -g deployment-package.zip lambda_function.py
 ```
 
 You now should have `deployment-package.zip` file inside the `lambda` folder.
-Run the next command to upload the deployment package to your Amazon S3 bucket `S3_BUCKET_ONE_NAME`.
 
-Provide the Amazon S3 bucket names for variables `S3_BUCKET_ONE_NAME` by replacing
-the placeholder `<BUCKET-ONE-NAME-HERE>` with your S3 bucket name.
+Run the next command to upload the deployment package to your Amazon S3 bucket from the second prerequisite. Replace `<DEPLOYABLES-BUCKET-NAME-HERE>` with the name of that bucket. 
 
 ```shell
-S3_BUCKET_ONE_NAME="<BUCKET-ONE-NAME-HERE>"
-aws s3 cp ./deployment-package.zip s3://${S3_BUCKET_ONE_NAME}/lambdapackage/deployment-package.zip
+S3_BUCKET_DEPLOYABLES="<DEPLOYABLES-BUCKET-NAME-HERE>"
+aws s3 cp ./deployment-package.zip s3://${S3_BUCKET_DEPLOYABLES}/lambdapackage/deployment-package.zip
 ```
+
 
 ### Deploying CloudFormation stack
 
@@ -104,16 +113,16 @@ S3_BUCKET_TWO_NAME="<BUCKET-TWO-NAME-HERE>"
 STACK_ID=$(aws cloudformation create-stack \
     --stack-name ${CF_STACK_NAME} \
     --template-body file://${CF_TEMPLATE_FILE_PATH} \
-    --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} \
+    --parameters ParameterKey=S3BucketOneName,ParameterValue=${S3_BUCKET_ONE_NAME} ParameterKey=S3BucketTwoName,ParameterValue=${S3_BUCKET_TWO_NAME} ParameterKey=S3BucketDeployables,ParameterValue=${S3_BUCKET_DEPLOYABLES} \
     --capabilities CAPABILITY_IAM \
-    --query 'StackId' --output text)
+    --query 'StackId' --output text --region us-east-1)
 ```
 
 `Optional`: You can wait for stack creation. When the command completes, it's a signal stack creation is completed.
 
 ```shell
 aws cloudformation wait stack-create-complete \
-  --stack-name ${STACK_ID}
+  --stack-name ${STACK_ID} --region us-east-1
 ```
 
 ## Testing the deployment
@@ -136,7 +145,7 @@ Upload an `index.html` file into the first S3 bucket.
 CF_STACK_NAME="cloudfront-s3-mrap-demo"
 S3_BUCKET_ONE_NAME=($(aws cloudformation describe-stacks \
       --stack-name ${CF_STACK_NAME} \
-      --query "Stacks[0].Outputs[?OutputKey=='S3BucketOneName'].OutputValue" --output text \
+      --query "Stacks[0].Outputs[?OutputKey=='S3BucketOneName'].OutputValue" --output text --region us-east-1 \
       --output text))
 
 BLOB="hello from s3 bucket ${S3_BUCKET_ONE_NAME}"
@@ -149,7 +158,7 @@ Upload an `index.html` file into the second S3 bucket.
 CF_STACK_NAME="cloudfront-s3-mrap-demo"
 S3_BUCKET_TWO_NAME=($(aws cloudformation describe-stacks \
       --stack-name ${CF_STACK_NAME} \
-      --query "Stacks[0].Outputs[?OutputKey=='S3BucketTwoName'].OutputValue" --output text \
+      --query "Stacks[0].Outputs[?OutputKey=='S3BucketTwoName'].OutputValue" --output text --region us-east-1 \
       --output text))
 
 BLOB="hello from s3 bucket ${S3_BUCKET_TWO_NAME}"

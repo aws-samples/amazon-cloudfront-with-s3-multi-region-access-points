@@ -2,7 +2,6 @@ import boto3
 from botocore import awsrequest
 from botocore import crt
 
-
 failover_header = 'originTypeFailover'
 cf_read_only_headers_list = [h.lower() for h in [
     'Accept-Encoding',
